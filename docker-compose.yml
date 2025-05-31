@@ -1,0 +1,62 @@
+# docker-compose.yaml
+# This file defines a multi-container Docker application using Docker Compose.
+# It sets up a web service (Nginx) and a PostgreSQL database service.
+
+version: '3.8' # Specify the Docker Compose file format version.
+              # Version 3.8 is a good modern choice.
+
+services:
+  # --- Web Service ---
+  # This service represents your web application.
+  # Here, we're using Nginx as a simple placeholder.
+  # In a real application, this might be a Node.js, Python, or PHP app.
+  web:
+    image: nginx:latest # Use the latest Nginx official image from Docker Hub.
+    ports:
+      - "80:80"         # Map host port 80 to container port 80.
+                        # This allows you to access Nginx in your browser via http://localhost.
+    volumes:
+      # Mount a local directory (./nginx) into the container's Nginx configuration directory.
+      # This allows you to customize Nginx configuration without rebuilding the image.
+      - ./nginx:/etc/nginx/conf.d
+      # Mount a local directory (./app) into the container's web root.
+      # This is where your static web files or application code would go.
+      - ./app:/usr/share/nginx/html
+    depends_on:
+      - db              # Ensure the 'db' service starts before the 'web' service.
+                        # This helps prevent connection errors on startup.
+    networks:
+      - app-network     # Connect this service to the 'app-network'.
+
+  # --- Database Service ---
+  # This service sets up a PostgreSQL database.
+  # You can replace 'postgres' with 'mysql' or another database image if preferred.
+  db:
+    image: postgres:13-alpine # Use a specific version of PostgreSQL for stability.
+                              # 'alpine' images are smaller and more secure.
+    environment:
+      # Set environment variables required by PostgreSQL.
+      # IMPORTANT: In a production environment, avoid hardcoding passwords like this.
+      # Use Docker secrets or environment variables managed by an orchestrator.
+      POSTGRES_DB: mydatabase        # Name of the database to create.
+      POSTGRES_USER: user            # Database user.
+      POSTGRES_PASSWORD: password    # Database password.
+    volumes:
+      # Create a named volume for persistent database data.
+      # This ensures your data isn't lost when the container is removed or restarted.
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - app-network     # Connect this service to the 'app-network'.
+
+# --- Volumes ---
+# Define named volumes for data persistence.
+# Data stored in named volumes persists even if containers are removed.
+volumes:
+  db-data: # This volume will store the PostgreSQL database files.
+
+# --- Networks ---
+# Define a custom bridge network for services to communicate with each other.
+# This provides better isolation and organization than the default bridge network.
+networks:
+  app-network:
+    driver: bridge # Use the default bridge network driver.
